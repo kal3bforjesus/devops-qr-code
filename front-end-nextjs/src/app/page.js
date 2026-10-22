@@ -6,14 +6,23 @@ import axios from 'axios';
 export default function Home() {
   const [url, setUrl] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
-      const response = await axios.post(`http://localhost:8000/generate-qr/?url=${url}`);
+      // 1. Point to the public API IP
+      // 2. Send the URL as a JSON body, not a query parameter
+      const response = await axios.post('http://172.171.138.9/generate-qr/', {
+        url: url
+      });
       setQrCodeUrl(response.data.qr_code_url);
     } catch (error) {
       console.error('Error generating QR Code:', error);
+      alert('Failed to generate QR code. Check console for details.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -27,8 +36,11 @@ export default function Home() {
           onChange={(e) => setUrl(e.target.value)}
           placeholder="Enter URL like https://example.com"
           style={styles.input}
+          required
         />
-        <button type="submit" style={styles.button}>Generate QR Code</button>
+        <button type="submit" style={styles.button} disabled={isLoading}>
+          {isLoading ? 'Generating...' : 'Generate QR Code'}
+        </button>
       </form>
       {qrCodeUrl && <img src={qrCodeUrl} alt="QR Code" style={styles.qrCode} />}
     </div>
@@ -64,7 +76,6 @@ const styles = {
     marginTop: '20px',
     width: '300px',
     color: '#121212'
-
   },
   button: {
     padding: '10px 20px',
@@ -77,5 +88,7 @@ const styles = {
   },
   qrCode: {
     marginTop: '20px',
+    maxWidth: '300px',
+    borderRadius: '10px',
   },
 };

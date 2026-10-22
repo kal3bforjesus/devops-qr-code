@@ -14,7 +14,7 @@ app = FastAPI(title="QR Code Generator API")
 
 # Allowing CORS for local testing with Next.js frontend
 origins = [
-    "http://localhost:3000"
+    "*"
 ]
 
 app.add_middleware(
