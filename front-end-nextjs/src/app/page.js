@@ -14,7 +14,7 @@ export default function Home() {
     try {
       // 1. Point to the public API IP
       // 2. Send the URL as a JSON body, not a query parameter
-      const response = await axios.post('http://172.171.138.9/generate-qr/', {
+      const response = await axios.post('/api/generate-qr/', {
         url: url
       });
       setQrCodeUrl(response.data.qr_code_url);
