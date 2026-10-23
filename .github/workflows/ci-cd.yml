@@ -1,0 +1,95 @@
+name: CI/CD Pipeline with Trivy Security Scan
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'k8s/**' # Prevents infinite loops when the workflow updates k8s files
+
+env:
+  ACR_NAME: ${{ secrets.ACR_NAME }}
+  API_IMAGE: qr-api
+  FRONTEND_IMAGE: qr-frontend
+  TAG: ${{ github.run_number }} # Auto-incrementing tag (e.g., 1, 2, 3...)
+
+jobs:
+  build-and-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Log in to Azure Container Registry
+        run: az acr login --name ${{ env.ACR_NAME }}
+
+      # --- API BUILD & SCAN ---
+      - name: Build API Docker Image
+        run: docker build -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.API_IMAGE }}:${{ env.TAG }} ./api
+
+      - name: Run Trivy Vulnerability Scanner on API
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.ACR_NAME }}.azurecr.io/${{ env.API_IMAGE }}:${{ env.TAG }}'
+          format: 'sarif'
+          output: 'trivy-api-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy API Scan Results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-api-results.sarif'
+
+      - name: Push API Image to ACR
+        run: docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.API_IMAGE }}:${{ env.TAG }}
+
+      # --- FRONTEND BUILD & SCAN ---
+      - name: Build Frontend Docker Image
+        run: docker build -t ${{ env.ACR_NAME }}.azurecr.io/${{ env.FRONTEND_IMAGE }}:${{ env.TAG }} ./front-end-nextjs
+
+      - name: Run Trivy Vulnerability Scanner on Frontend
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.ACR_NAME }}.azurecr.io/${{ env.FRONTEND_IMAGE }}:${{ env.TAG }}'
+          format: 'sarif'
+          output: 'trivy-frontend-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy Frontend Scan Results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-frontend-results.sarif'
+
+      - name: Push Frontend Image to ACR
+        run: docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.FRONTEND_IMAGE }}:${{ env.TAG }}
+
+  update-manifests:
+    needs: build-and-scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Update Kubernetes Manifests with new image tags
+        run: |
+          sed -i "s|qrdevopsacr2026.azurecr.io/qr-api:.*|qrdevopsacr2026.azurecr.io/qr-api:${{ env.TAG }}|g" k8s/api.yaml
+          sed -i "s|qrdevopsacr2026.azurecr.io/qr-frontend:.*|qrdevopsacr2026.azurecr.io/qr-frontend:${{ env.TAG }}|g" k8s/frontend.yaml
+
+      - name: Commit and Push updated manifests
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add k8s/api.yaml k8s/frontend.yaml
+          git commit -m "chore: update k8s manifests to image tag ${{ env.TAG }} [skip ci]" || echo "No changes to commit"
+          git push
