@@ -6,7 +6,7 @@ export async function POST(request) {
     
     // MAGIC: 'api-service' is the internal Kubernetes DNS name! 
     // No public IP needed. This only works inside the cluster.
-    const backendRes = await fetch('http://api-service:8000/generate-qr/', {
+    const backendRes = await fetch('http://api-service/generate-qr/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
