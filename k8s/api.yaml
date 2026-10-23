@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: api
-        image: qrdevopsacr2026.azurecr.io/qr-api:5
+        image: qrdevopsacr2026.azurecr.io/qr-api:6
         ports:
         - containerPort: 8000
         envFrom:
