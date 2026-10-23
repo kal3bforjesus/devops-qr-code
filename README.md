@@ -1,50 +1,52 @@
-# devops-qr-code
+# ☁️ Cloud-Native QR Code Generator
 
-This is the sample application for the DevOps Capstone Project.
-It generates QR Codes for the provided URL, the front-end is in NextJS and the API is written in Python using FastAPI.
+A production-grade, fully automated DevOps project demonstrating a secure CI/CD and GitOps pipeline built on Microsoft Azure. This application generates QR codes and stores them in the cloud, but the true focus of this project is the **engineering, automation, and security** behind the deployment.
 
-## Application
+## 🏗️ Architecture & Workflow
 
-**Front-End** - A web application where users can submit URLs.
+This project utilizes a modern GitOps workflow to ensure zero-downtime, secure, and automated deployments:
 
-**API**: API that receives URLs and generates QR codes. The API stores the QR codes in cloud storage(AWS S3 Bucket).
+1. **Code Push:** A developer pushes code to the `main` branch on GitHub.
+2. **CI/CD & DevSecOps:** GitHub Actions automatically triggers a pipeline that builds the Docker images and runs **Trivy** to scan for critical security vulnerabilities.
+3. **Container Registry:** Once the images pass the security scan, they are pushed to a private **Azure Container Registry (ACR)**.
+4. **Manifest Update:** The pipeline automatically updates the Kubernetes YAML manifests with the new image tags and commits them back to the repository.
+5. **GitOps Sync:** **ArgoCD** detects the manifest changes in the `k8s/` directory and automatically synchronizes the **Azure Kubernetes Service (AKS)** cluster to the new state.
+6. **Internal Routing:** The Next.js frontend receives user input and proxies the request internally to the FastAPI backend using Kubernetes DNS. The backend is completely hidden from the public internet.
+7. **Cloud Storage:** The backend generates the QR code and securely uploads it to **Azure Blob Storage**.
 
-## Running locally
+## 🛡️ Key DevOps Best Practices Implemented
 
-### API
+* **Zero-Trust Networking:** The backend API uses a `ClusterIP` (no public internet exposure). The Next.js frontend acts as a Backend-for-Frontend (BFF) proxy, eliminating CORS issues, hardcoded IPs, and external attack vectors.
+* **Infrastructure as Code (IaC):** The entire Azure environment (AKS, ACR, Blob Storage, Resource Groups) is provisioned and managed via Terraform.
+* **GitOps:** The cluster state is entirely declarative and version-controlled. Manual `kubectl apply` commands are avoided in production.
+* **Shift-Left Security:** Trivy scans all Docker images for HIGH and CRITICAL vulnerabilities *before* they are allowed to reach the container registry.
+* **Secret Management:** Sensitive credentials (Azure keys, GitHub tokens) are managed via GitHub Secrets and Kubernetes Secrets, and are never stored in plain text in the repository.
+* **Observability:** Utilized the official Kubernetes Dashboard for real-time visual monitoring of pod health, resource metrics, and log aggregation.
+* **Cost Optimization:** The entire environment is ephemeral. It can be spun up or torn down in minutes using `terraform apply` and `terraform destroy` to manage cloud spend.
 
-The API code exists in the `api` directory. You can run the API server locally:
+## 🛠️ Technology Stack
 
-- Clone this repo
-- Make sure you are in the `api` directory
-- Create a virtualenv by typing in the following command: `python -m venv .venv`
-- Install the required packages: `pip install -r requirements.txt`
-- Create a `.env` file, and add you AWS Access and Secret key, check  `.env.example`
-- Also, change the BUCKET_NAME to your S3 bucket name in `main.py`
-- Run the API server: `uvicorn main:app --reload`
-- Your API Server should be running on port `http://localhost:8000`
+| Category | Technologies |
+| :--- | :--- |
+| **Cloud Provider** | Microsoft Azure |
+| **Infrastructure as Code** | Terraform |
+| **Container Orchestration** | Kubernetes (AKS) |
+| **Container Registry** | Azure Container Registry (ACR) |
+| **GitOps** | ArgoCD |
+| **CI/CD & Security** | GitHub Actions, Trivy |
+| **Observability** | Kubernetes Dashboard |
+| **Frontend** | Next.js (React) |
+| **Backend** | Python (FastAPI) |
+| **Storage** | Azure Blob Storage |
+| **Containerization** | Docker |
 
-### Front-end
+##  Project Structure
 
-The front-end code exits in the `front-end-nextjs` directory. You can run the front-end server locally:
-
-- Clone this repo
-- Make sure you are in the `front-end-nextjs` directory
-- Install the dependencies: `npm install`
-- Run the NextJS Server: `npm run dev`
-- Your Front-end Server should be running on `http://localhost:3000`
-
-
-## Goal
-
-The goal is to get hands-on with DevOps practices like Containerization, CICD and monitoring.
-
-Look at the capstone project for more detials.
-
-## Author
-
-[Rishab Kumar](https://github.com/rishabkumar7)
-
-## License
-
-[MIT](./LICENSE)
+```text
+devops-qr-code/
+├── .github/workflows/      # GitHub Actions CI/CD & DevSecOps pipeline
+├── api/                    # FastAPI Backend application
+├── front-end-nextjs/       # Next.js Frontend application
+├── k8s/                    # Kubernetes manifests (Deployments, Services)
+├── terraform/              # Terraform Infrastructure as Code (IaC)
+└── README.md
