@@ -49,6 +49,7 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-api-results.sarif'
+          category: api
 
       - name: Push API Image to ACR
         run: docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.API_IMAGE }}:${{ env.TAG }}
@@ -70,6 +71,7 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-frontend-results.sarif'
+          category: frontend
 
       - name: Push Frontend Image to ACR
         run: docker push ${{ env.ACR_NAME }}.azurecr.io/${{ env.FRONTEND_IMAGE }}:${{ env.TAG }}
