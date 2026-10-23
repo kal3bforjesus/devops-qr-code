@@ -72,4 +72,5 @@ async def generate_qr(request: URLRequest):
         return {"qr_code_url": blob_url}
     
     except Exception as e:
+        print(f"CRITICAL AZURE ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate or upload QR code: {str(e)}")
