@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: qrdevopsacr2026.azurecr.io/qr-frontend:4
+        image: qrdevopsacr2026.azurecr.io/qr-frontend:5
         ports:
         - containerPort: 3000
         env:
